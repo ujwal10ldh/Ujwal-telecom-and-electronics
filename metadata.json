@@ -1,0 +1,7 @@
+{
+  "name": "Ujwal Telecom & Electronics",
+  "description": "Your trusted Indian electronics retail store for mobile phones, telecom equipment, audio, smart watches, home entertainment and accessories.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
