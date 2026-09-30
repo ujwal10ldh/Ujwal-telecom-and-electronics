@@ -2,18 +2,18 @@ import { Category, CustomerReview, Product, StoreInfo } from '../types';
 
 export const STORE_INFO: StoreInfo = {
   name: 'Ujwal Telecom & Electronics',
-  address: 'Shop No. 4 & 5, Commercial Complex, Main Market Road',
-  landmark: 'Opposite State Bank of India',
-  cityStatePincode: 'Pune, Maharashtra 411001',
-  phone: '+919822000000',
-  phoneDisplay: '+91 98220 00000',
-  whatsapp: '919822000000',
-  whatsappDisplay: '+91 98220 00000',
-  email: 'contact@ujwaltelecom.com',
-  businessHours: 'Monday – Saturday: 10:00 AM – 9:00 PM',
-  sundayHours: 'Sunday: 11:00 AM – 8:00 PM',
-  googleMapsEmbedUrl: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d121059.04362706399!2d73.79292671510444!3d18.52459859972379!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3bc2bf2e67461101%3A0x828d43bf9d3e3f32!2sPune%2C%20Maharashtra!5e0!3m2!1sen!2sin!4v1700000000000!5m2!1sen!2sin',
-  googleMapsDirectionsUrl: 'https://maps.google.com/?q=Electronics+Market+Pune'
+  address: 'Street No. 1, Maha Luxmi Nagar, Lohara',
+  landmark: 'Near Lohara Main Road',
+  cityStatePincode: 'Ludhiana, Punjab 141016',
+  phone: '+919803679285',
+  phoneDisplay: '+91 98036 79285',
+  whatsapp: '919803679285',
+  whatsappDisplay: '+91 98036 79285',
+  email: 'ujwalhack123@gmail.com',
+  businessHours: 'Monday – Saturday: 9:30 AM – 9:00 PM',
+  sundayHours: 'Sunday: 10:00 AM – 8:30 PM',
+  googleMapsEmbedUrl: 'https://www.google.com/maps?q=Maha+Luxmi+Nagar+Lohara+Ludhiana+Punjab+141016&output=embed',
+  googleMapsDirectionsUrl: 'https://www.google.com/maps/search/?api=1&query=Maha+Luxmi+Nagar+Lohara+Ludhiana+Punjab+141016'
 };
 
 export const CATEGORIES: Category[] = [
@@ -468,18 +468,18 @@ export const INITIAL_PRODUCTS: Product[] = [
 export const TESTIMONIALS: CustomerReview[] = [
   {
     id: 'rev-1',
-    customerName: 'Rajesh Kulkarni',
-    city: 'Pune',
+    customerName: 'Gurpreet Singh',
+    city: 'Ludhiana',
     rating: 5,
-    comment: 'Visited Ujwal Telecom & Electronics for purchasing a new 5G phone and chargers. The staff explained the specifications clearly and even transferred all my contacts and WhatsApp data patiently. Genuine products and reasonable prices.',
+    comment: 'Visited Ujwal Telecom & Electronics at Lohara for purchasing a new 5G phone and chargers. The staff explained the specifications clearly and transferred all my contacts and WhatsApp data patiently. Genuine products and reasonable prices.',
     productMentioned: 'Apex Pro 5G Flagship Smartphone',
     date: '2 weeks ago',
     verified: true
   },
   {
     id: 'rev-2',
-    customerName: 'Pooja Sharma',
-    city: 'Pune',
+    customerName: 'Simranjeet Kaur',
+    city: 'Ludhiana',
     rating: 5,
     comment: 'Got the Acoustic ANC Earbuds and a 20,000mAh power bank before my travel. Excellent sound quality and battery life! It is rare to find an electronics store where after-sales support is as good as the sales service.',
     productMentioned: 'Acoustic Elite ANC Earbuds',
@@ -488,20 +488,20 @@ export const TESTIMONIALS: CustomerReview[] = [
   },
   {
     id: 'rev-3',
-    customerName: 'Amit Deshmukh',
-    city: 'Pune',
+    customerName: 'Harmanpreet Verma',
+    city: 'Ludhiana',
     rating: 5,
-    comment: 'Installed 360 degree security cameras in my shop through Ujwal Telecom. Installation was done within 24 hours, and they configured the phone app setup seamlessly. Highly trusted local store!',
+    comment: 'Installed 360 degree security cameras in my shop through Ujwal Telecom in Maha Luxmi Nagar. Installation was done within 24 hours, and they configured the phone app setup seamlessly. Highly trusted local store!',
     productMentioned: 'Smart 360° Wi-Fi Home Security Camera',
     date: '3 weeks ago',
     verified: true
   },
   {
     id: 'rev-4',
-    customerName: 'Sunita Patil',
-    city: 'Pune',
+    customerName: 'Rajinder Kumar',
+    city: 'Ludhiana',
     rating: 5,
-    comment: 'Purchased a 50-inch 4K Smart TV and a GaN fast charger. Delivered safely to my home on the same day and tested before payment. Very courteous owner and genuine billing with manufacturer warranty.',
+    comment: 'Purchased a 50-inch 4K Smart TV and a GaN fast charger. Delivered safely to my home in Lohara on the same day and tested before payment. Very courteous owner and genuine billing with manufacturer warranty.',
     productMentioned: '50-Inch 4K Ultra HD Smart TV',
     date: '5 days ago',
     verified: true

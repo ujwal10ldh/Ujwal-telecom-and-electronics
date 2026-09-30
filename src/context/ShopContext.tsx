@@ -1,20 +1,35 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { INITIAL_PRODUCTS, STORE_INFO } from '../data/storeData';
-import { CartItem, Order, Product, ShippingAddress } from '../types';
+import { CartItem, Order, OrderStatus, OrderStatusEvent, Product, ShippingAddress, StockStatus, User, UserRole } from '../types';
+
+export const ADMIN_EMAIL = 'ujwalhack123@gmail.com';
 
 export type PolicyType = 'faqs' | 'shipping' | 'return' | 'warranty' | 'privacy' | 'terms';
-
 export type SortOption = 'featured' | 'price-low' | 'price-high' | 'rating' | 'newest';
-
 export type AppView = 'home' | 'catalog' | 'product' | 'contact' | 'about';
 
 interface ShopContextType {
+  // Authentication & RBAC
+  currentUser: User | null;
+  isAdmin: boolean;
+  isAuthOpen: boolean;
+  setIsAuthOpen: (open: boolean) => void;
+  authMode: 'login' | 'signup';
+  setAuthMode: (mode: 'login' | 'signup') => void;
+  login: (email: string, password?: string) => { success: boolean; message: string; user?: User };
+  signup: (name: string, email: string, password?: string, phone?: string) => { success: boolean; message: string; user?: User };
+  logout: () => void;
+  openAdminPanel: () => void;
+  updateUserProfile: (updated: Partial<User>) => void;
+
+  // Products
   products: Product[];
   addProduct: (product: Omit<Product, 'id'>) => void;
   updateProduct: (product: Product) => void;
   deleteProduct: (id: string) => void;
   resetProductsToDefault: () => void;
 
+  // Cart
   cart: CartItem[];
   addToCart: (product: Product, quantity?: number) => void;
   removeFromCart: (productId: string) => void;
@@ -29,11 +44,13 @@ interface ShopContextType {
   removeCoupon: () => void;
   total: number;
 
+  // Wishlist
   wishlist: string[];
   toggleWishlist: (productId: string) => void;
   isInWishlist: (productId: string) => boolean;
   wishlistCount: number;
 
+  // Search & Navigation
   searchQuery: string;
   setSearchQuery: (query: string) => void;
   selectedCategory: string;
@@ -48,6 +65,7 @@ interface ShopContextType {
   currentView: AppView;
   setCurrentView: (view: AppView) => void;
 
+  // Modals & Drawers
   isCartOpen: boolean;
   setIsCartOpen: (open: boolean) => void;
   isWishlistOpen: boolean;
@@ -59,6 +77,19 @@ interface ShopContextType {
   isAdminOpen: boolean;
   setIsAdminOpen: (open: boolean) => void;
 
+  // Order Tracking Modal & Methods
+  isTrackingOpen: boolean;
+  setIsTrackingOpen: (open: boolean) => void;
+  trackedOrderId: string | null;
+  setTrackedOrderId: (id: string | null) => void;
+  openOrderTracking: (orderId?: string) => void;
+  updateOrderStatus: (orderId: string, status: OrderStatus, note?: string) => void;
+
+  // Tax Invoice Modal
+  invoiceOrder: Order | null;
+  openInvoice: (order: Order) => void;
+  closeInvoice: () => void;
+
   policyModal: { isOpen: boolean; type: PolicyType };
   openPolicyModal: (type: PolicyType) => void;
   closePolicyModal: () => void;
@@ -69,17 +100,108 @@ interface ShopContextType {
   openProductDetails: (product: Product) => void;
   closeProductDetails: () => void;
 
+  // Orders
   orders: Order[];
   lastPlacedOrder: Order | null;
-  placeOrder: (shipping: ShippingAddress, paymentMethod: Order['paymentMethod']) => Promise<Order>;
+  placeOrder: (
+    shipping: ShippingAddress, 
+    paymentMethod: Order['paymentMethod'],
+    paymentDetails?: {
+      upiApp?: string;
+      upiTransactionId?: string;
+      cardLast4?: string;
+      bankName?: string;
+    }
+  ) => Promise<Order>;
 
+  // Toast
   toast: { message: string; type: 'success' | 'info' | 'error' } | null;
   showToast: (message: string, type?: 'success' | 'info' | 'error') => void;
 }
 
 const ShopContext = createContext<ShopContextType | undefined>(undefined);
 
+// Only the store owner account is pre-registered
+const INITIAL_USERS: User[] = [
+  {
+    id: 'usr-admin',
+    name: 'Ujwal (Store Owner)',
+    email: ADMIN_EMAIL,
+    role: 'admin',
+    phone: '+91 98036 79285',
+    createdAt: '2026-01-01'
+  }
+];
+
 export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // Registered Users (stored in localStorage)
+  const [users, setUsers] = useState<User[]>(() => {
+    try {
+      const saved = localStorage.getItem('ujwal_registered_users');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        // Filter out old demo dummy emails
+        const cleaned = parsed.filter(
+          (u: User) =>
+            u.email.toLowerCase() !== 'amankumar@example.com' &&
+            u.email.toLowerCase() !== 'pooja.customer@example.com'
+        );
+        // Ensure admin user always exists and has admin role
+        const hasAdmin = cleaned.some((u: User) => u.email.toLowerCase() === ADMIN_EMAIL.toLowerCase());
+        if (!hasAdmin) {
+          return [INITIAL_USERS[0], ...cleaned];
+        }
+        return cleaned;
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    return INITIAL_USERS;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('ujwal_registered_users', JSON.stringify(users));
+    } catch (e) {
+      console.error(e);
+    }
+  }, [users]);
+
+  // Current logged in user (starts with admin ujwalhack123@gmail.com for immediate access if saved, or null)
+  const [currentUser, setCurrentUser] = useState<User | null>(() => {
+    try {
+      const saved = localStorage.getItem('ujwal_current_user');
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    // Default to the Store Owner admin on first session so the owner immediately sees their admin power
+    return INITIAL_USERS[0];
+  });
+
+  useEffect(() => {
+    try {
+      if (currentUser) {
+        localStorage.setItem('ujwal_current_user', JSON.stringify(currentUser));
+      } else {
+        localStorage.removeItem('ujwal_current_user');
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }, [currentUser]);
+
+  // Is current user an admin? ONLY ujwalhack123@gmail.com gets admin power
+  const isAdmin = currentUser !== null && 
+    currentUser.email.toLowerCase().trim() === ADMIN_EMAIL.toLowerCase().trim() && 
+    currentUser.role === 'admin';
+
+  // Auth modal state
+  const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
+
   // Products with localStorage persistence
   const [products, setProducts] = useState<Product[]>(() => {
     try {
@@ -143,12 +265,21 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [wishlist]);
 
-  // Orders
+  // Orders - Stored strictly from real customer transactions
   const [orders, setOrders] = useState<Order[]>(() => {
     try {
       const saved = localStorage.getItem('ujwal_orders');
       if (saved) {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          // Filter out any legacy dummy/mock orders
+          return parsed.filter(
+            (o: Order) =>
+              o.id !== 'ORD-942815' &&
+              !o.shippingAddress?.email?.includes('gurpreet.singh') &&
+              !o.shippingAddress?.fullName?.toLowerCase().includes('gurpreet')
+          );
+        }
       }
     } catch (e) {
       console.error(e);
@@ -178,6 +309,12 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [isAccountOpen, setIsAccountOpen] = useState(false);
   const [isAdminOpen, setIsAdminOpen] = useState(false);
+  const [isTrackingOpen, setIsTrackingOpen] = useState(false);
+  const [trackedOrderId, setTrackedOrderId] = useState<string | null>(null);
+
+  const [invoiceOrder, setInvoiceOrder] = useState<Order | null>(null);
+  const openInvoice = (order: Order) => setInvoiceOrder(order);
+  const closeInvoice = () => setInvoiceOrder(null);
 
   const [policyModal, setPolicyModal] = useState<{ isOpen: boolean; type: PolicyType }>({
     isOpen: false,
@@ -198,11 +335,138 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setToast({ message, type });
     setTimeout(() => {
       setToast(null);
-    }, 3200);
+    }, 3500);
   };
 
-  // Product mutations
+  // Authentication functions
+  const login = (email: string, _password?: string) => {
+    const cleanEmail = email.trim().toLowerCase();
+    
+    // Check if logging in as Admin
+    if (cleanEmail === ADMIN_EMAIL.toLowerCase()) {
+      const adminUser: User = {
+        id: 'usr-admin',
+        name: 'Ujwal (Store Owner)',
+        email: ADMIN_EMAIL,
+        role: 'admin',
+        phone: '+91 98036 79285',
+        createdAt: '2026-01-01'
+      };
+      setCurrentUser(adminUser);
+      showToast(`Welcome back, Ujwal! Admin privileges activated.`);
+      return { success: true, message: 'Logged in as Admin (Store Owner)', user: adminUser };
+    }
+
+    // Check existing customer
+    const existing = users.find((u) => u.email.toLowerCase() === cleanEmail);
+    if (existing) {
+      // Ensure only ujwalhack123@gmail.com has admin
+      const customerUser: User = {
+        ...existing,
+        role: 'customer'
+      };
+      setCurrentUser(customerUser);
+      showToast(`Welcome back, ${customerUser.name}!`);
+      return { success: true, message: 'Logged in as Customer', user: customerUser };
+    }
+
+    // Auto-create customer user if not found
+    const newCust: User = {
+      id: `usr-${Date.now().toString().slice(-4)}`,
+      name: cleanEmail.split('@')[0],
+      email: cleanEmail,
+      role: 'customer',
+      createdAt: new Date().toISOString()
+    };
+    setUsers((prev) => [...prev, newCust]);
+    setCurrentUser(newCust);
+    showToast(`Account created! Welcome, ${newCust.name}!`);
+    return { success: true, message: 'New customer account created and logged in', user: newCust };
+  };
+
+  const signup = (name: string, email: string, _password?: string, phone?: string) => {
+    const cleanEmail = email.trim().toLowerCase();
+    
+    // Only ujwalhack123@gmail.com gets admin power
+    const isTargetAdmin = cleanEmail === ADMIN_EMAIL.toLowerCase();
+    const role: UserRole = isTargetAdmin ? 'admin' : 'customer';
+
+    const newUser: User = {
+      id: `usr-${Date.now().toString().slice(-4)}`,
+      name: name.trim() || cleanEmail.split('@')[0],
+      email: cleanEmail,
+      role,
+      phone: phone?.trim(),
+      createdAt: new Date().toISOString()
+    };
+
+    setUsers((prev) => {
+      const filtered = prev.filter((u) => u.email.toLowerCase() !== cleanEmail);
+      return [...filtered, newUser];
+    });
+
+    setCurrentUser(newUser);
+
+    if (isTargetAdmin) {
+      showToast('Admin account activated! Full store controls unlocked.');
+    } else {
+      showToast(`Welcome to Ujwal Telecom, ${newUser.name}!`);
+    }
+
+    return { success: true, message: `Account created successfully with ${role} privileges`, user: newUser };
+  };
+
+  const logout = () => {
+    const prevName = currentUser?.name || 'User';
+    setCurrentUser(null);
+    setIsAdminOpen(false);
+    showToast(`Logged out. See you soon, ${prevName}!`, 'info');
+  };
+
+  const updateUserProfile = (updated: Partial<User>) => {
+    if (!currentUser) return;
+    
+    // Prevent elevating role unless email matches ADMIN_EMAIL
+    const safeRole: UserRole = currentUser.email.toLowerCase() === ADMIN_EMAIL.toLowerCase() 
+      ? 'admin' 
+      : 'customer';
+
+    const updatedUser: User = {
+      ...currentUser,
+      name: updated.name !== undefined ? updated.name.trim() : currentUser.name,
+      phone: updated.phone !== undefined ? updated.phone.trim() : currentUser.phone,
+      streetAddress: updated.streetAddress !== undefined ? updated.streetAddress.trim() : currentUser.streetAddress,
+      areaLocality: updated.areaLocality !== undefined ? updated.areaLocality.trim() : currentUser.areaLocality,
+      city: updated.city !== undefined ? updated.city.trim() : currentUser.city,
+      state: updated.state !== undefined ? updated.state.trim() : currentUser.state,
+      pincode: updated.pincode !== undefined ? updated.pincode.trim() : currentUser.pincode,
+      role: safeRole
+    };
+
+    setCurrentUser(updatedUser);
+    setUsers((prev) => prev.map((u) => (u.id === updatedUser.id ? updatedUser : u)));
+    showToast('Your account details have been updated successfully!');
+  };
+
+  // Restrict opening Admin Panel strictly to admin
+  const openAdminPanel = () => {
+    if (isAdmin) {
+      setIsAdminOpen(true);
+    } else if (currentUser) {
+      showToast('Access denied: Admin power is restricted to ujwalhack123@gmail.com', 'error');
+    } else {
+      showToast('Please log in with the admin account to access store controls', 'error');
+      setAuthMode('login');
+      setIsAuthOpen(true);
+    }
+  };
+
+  // Product mutations (Admin only)
   const addProduct = (productData: Omit<Product, 'id'>) => {
+    if (!isAdmin) {
+      showToast('Unauthorized: Only the admin account can add products', 'error');
+      return;
+    }
     const newId = `ujw-${Date.now().toString().slice(-4)}`;
     const newProduct: Product = {
       ...productData,
@@ -213,19 +477,31 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const updateProduct = (updated: Product) => {
+    if (!isAdmin) {
+      showToast('Unauthorized: Only the admin account can edit products', 'error');
+      return;
+    }
     setProducts((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
     showToast(`Updated product "${updated.name}"`);
   };
 
   const deleteProduct = (id: string) => {
+    if (!isAdmin) {
+      showToast('Unauthorized: Only the admin account can delete products', 'error');
+      return;
+    }
     setProducts((prev) => prev.filter((p) => p.id !== id));
     showToast('Product removed from catalog', 'info');
   };
 
   const resetProductsToDefault = () => {
+    if (!isAdmin) {
+      showToast('Unauthorized: Only the admin account can reset products', 'error');
+      return;
+    }
     setProducts(INITIAL_PRODUCTS);
     localStorage.removeItem('ujwal_products');
-    showToast('Reset catalog to default demo products', 'info');
+    showToast('Catalog restored to standard inventory', 'info');
   };
 
   // Cart actions
@@ -341,12 +617,107 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setCurrentView('catalog');
   };
 
+  // Order Tracking Helpers
+  const openOrderTracking = (orderId?: string) => {
+    if (orderId) {
+      setTrackedOrderId(orderId);
+    } else if (orders.length > 0) {
+      setTrackedOrderId(orders[0].id);
+    } else {
+      setTrackedOrderId(null);
+    }
+    setIsTrackingOpen(true);
+  };
+
+  const updateOrderStatus = (orderId: string, newStatus: OrderStatus, customNote?: string) => {
+    setOrders((prev) =>
+      prev.map((order) => {
+        if (order.id !== orderId) return order;
+
+        const timeNow = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+        const updatedTimeline = order.timeline?.map((event) => {
+          if (event.status === newStatus) {
+            return {
+              ...event,
+              completed: true,
+              current: true,
+              time: timeNow,
+              description: customNote || event.description
+            };
+          }
+          const isPrior =
+            newStatus === 'Delivered' ||
+            ((newStatus === 'Out for Delivery' || newStatus === 'Ready for Pickup') &&
+              (event.status === 'Confirmed' || event.status === 'Packed')) ||
+            (newStatus === 'Packed' && event.status === 'Confirmed');
+
+          return {
+            ...event,
+            current: false,
+            completed: event.completed || isPrior
+          };
+        }) || [];
+
+        return {
+          ...order,
+          orderStatus: newStatus,
+          timeline: updatedTimeline
+        };
+      })
+    );
+    showToast(`Order #${orderId} marked as ${newStatus}!`);
+  };
+
   // Order Placement
   const placeOrder = async (
     shipping: ShippingAddress,
-    paymentMethod: Order['paymentMethod']
+    paymentMethod: Order['paymentMethod'],
+    paymentDetails?: {
+      upiApp?: string;
+      upiTransactionId?: string;
+      cardLast4?: string;
+      bankName?: string;
+    }
   ): Promise<Order> => {
     const orderId = `ORD-${Date.now().toString().slice(-6)}`;
+    const trackingNumber = `UJWAL-${Math.floor(100000 + Math.random() * 900000)}`;
+    const nowTime = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+    const isPickup = shipping.deliveryType === 'store_pickup';
+
+    const timeline: OrderStatusEvent[] = [
+      {
+        status: 'Confirmed',
+        label: 'Order Placed & Verified',
+        time: nowTime,
+        description: `Order successfully booked via ${paymentMethod}. GST invoice initiated.`,
+        completed: true,
+        current: true
+      },
+      {
+        status: 'Packed',
+        label: 'Quality Check & Safe Packing',
+        time: 'In Progress',
+        description: 'Device serial numbers scanned and sealed with tamper-proof warranty sticker.',
+        completed: false
+      },
+      {
+        status: isPickup ? 'Ready for Pickup' : 'Out for Delivery',
+        label: isPickup ? 'Ready at Lohara Store' : 'Out for Local Delivery in Ludhiana',
+        time: 'Scheduled',
+        description: isPickup
+          ? 'Collect at Street No 1, Maha Luxmi Nagar, Lohara with order ID.'
+          : `Dispatched with local rider to ${shipping.streetAddress || 'your address'}, ${shipping.city}.`,
+        completed: false
+      },
+      {
+        status: 'Delivered',
+        label: isPickup ? 'Collected by Customer' : 'Delivered & Handed Over',
+        time: 'Pending',
+        description: 'Package received and unboxing verified with customer.',
+        completed: false
+      }
+    ];
+
     const newOrder: Order = {
       id: orderId,
       date: new Date().toLocaleDateString('en-IN', {
@@ -356,6 +727,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
         hour: '2-digit',
         minute: '2-digit'
       }),
+      userEmail: currentUser?.email || shipping.email || undefined,
       items: [...cart],
       subtotal,
       discount: discountAmount,
@@ -364,8 +736,31 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       paymentMethod,
       paymentStatus: paymentMethod === 'Cash on Delivery' ? 'Pending' : 'Paid',
       orderStatus: 'Confirmed',
-      shippingAddress: shipping
+      shippingAddress: shipping,
+      trackingNumber,
+      estimatedDelivery: isPickup ? 'Ready in 2 Hours' : 'Today by 7:30 PM (Ludhiana Local)',
+      courierPartner: isPickup ? 'In-Store Pickup (Lohara Store)' : 'Ujwal Express Local Delivery',
+      timeline,
+      upiTransactionId: paymentDetails?.upiTransactionId,
+      paymentDetails
     };
+
+    // Decrement actual inventory stock for real retail usage
+    setProducts((prev) =>
+      prev.map((p) => {
+        const cartItem = cart.find((item) => item.product.id === p.id);
+        if (cartItem) {
+          const newStock = Math.max(0, p.stockCount - cartItem.quantity);
+          const newStatus: StockStatus = newStock === 0 ? 'out_of_stock' : newStock <= 3 ? 'low_stock' : 'in_stock';
+          return {
+            ...p,
+            stockCount: newStock,
+            stockStatus: newStatus
+          };
+        }
+        return p;
+      })
+    );
 
     setOrders((prev) => [newOrder, ...prev]);
     setLastPlacedOrder(newOrder);
@@ -378,6 +773,18 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
   return (
     <ShopContext.Provider
       value={{
+        currentUser,
+        isAdmin,
+        isAuthOpen,
+        setIsAuthOpen,
+        authMode,
+        setAuthMode,
+        login,
+        signup,
+        logout,
+        openAdminPanel,
+        updateUserProfile,
+
         products,
         addProduct,
         updateProduct,
@@ -427,6 +834,17 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setIsAccountOpen,
         isAdminOpen,
         setIsAdminOpen,
+
+        isTrackingOpen,
+        setIsTrackingOpen,
+        trackedOrderId,
+        setTrackedOrderId,
+        openOrderTracking,
+        updateOrderStatus,
+
+        invoiceOrder,
+        openInvoice,
+        closeInvoice,
 
         policyModal,
         openPolicyModal,

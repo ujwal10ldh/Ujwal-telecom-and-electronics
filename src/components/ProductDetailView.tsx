@@ -263,7 +263,7 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({ product })
                 <input
                   type="text"
                   maxLength={6}
-                  placeholder="Enter 6-digit PIN code (e.g. 411001)"
+                  placeholder="Enter 6-digit PIN code (e.g. 141016)"
                   value={pincode}
                   onChange={(e) => setPincode(e.target.value)}
                   className="flex-1 text-xs p-2 rounded-lg border border-slate-300 focus:outline-none focus:border-emerald-600"

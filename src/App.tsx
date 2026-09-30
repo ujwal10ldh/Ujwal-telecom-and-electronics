@@ -26,10 +26,13 @@ import { AccountModal } from './components/AccountModal';
 import { QuickViewModal } from './components/QuickViewModal';
 import { AdminProductManager } from './components/AdminProductManager';
 import { PolicyModal } from './components/PolicyModal';
+import { AuthModal } from './components/AuthModal';
+import { OrderTrackingModal } from './components/OrderTrackingModal';
+import { InvoiceModal } from './components/InvoiceModal';
 import { CheckCircle2, AlertCircle, Info } from 'lucide-react';
 
 const AppContent: React.FC = () => {
-  const { currentView, activeProductDetails, toast } = useShop();
+  const { currentView, activeProductDetails, toast, invoiceOrder, closeInvoice } = useShop();
 
   return (
     <div className="min-h-screen flex flex-col bg-[#F8F9FA] text-slate-900 selection:bg-emerald-800 selection:text-white">
@@ -72,9 +75,12 @@ const AppContent: React.FC = () => {
       <WishlistDrawer />
       <CheckoutModal />
       <AccountModal />
+      <AuthModal />
       <QuickViewModal />
       <AdminProductManager />
       <PolicyModal />
+      <OrderTrackingModal />
+      <InvoiceModal order={invoiceOrder} isOpen={!!invoiceOrder} onClose={closeInvoice} />
 
       {/* Toast Notification Popup */}
       {toast && (

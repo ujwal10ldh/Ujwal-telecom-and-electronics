@@ -77,9 +77,37 @@ export interface ShippingAddress {
   deliveryType: 'home_delivery' | 'store_pickup';
 }
 
+export type UserRole = 'admin' | 'customer';
+
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  phone?: string;
+  streetAddress?: string;
+  areaLocality?: string;
+  city?: string;
+  state?: string;
+  pincode?: string;
+  createdAt: string;
+}
+
+export type OrderStatus = 'Confirmed' | 'Processing' | 'Packed' | 'Out for Delivery' | 'Delivered' | 'Ready for Pickup';
+
+export interface OrderStatusEvent {
+  status: OrderStatus;
+  label: string;
+  time: string;
+  description: string;
+  completed: boolean;
+  current?: boolean;
+}
+
 export interface Order {
   id: string;
   date: string;
+  userEmail?: string;
   items: CartItem[];
   subtotal: number;
   discount: number;
@@ -87,6 +115,17 @@ export interface Order {
   total: number;
   paymentMethod: 'UPI / QR' | 'Credit / Debit Card' | 'Net Banking' | 'Cash on Delivery';
   paymentStatus: 'Pending' | 'Paid';
-  orderStatus: 'Confirmed' | 'Processing' | 'Shipped' | 'Delivered';
+  orderStatus: OrderStatus;
   shippingAddress: ShippingAddress;
+  trackingNumber?: string;
+  estimatedDelivery?: string;
+  courierPartner?: string;
+  timeline?: OrderStatusEvent[];
+  upiTransactionId?: string;
+  paymentDetails?: {
+    upiApp?: string;
+    cardLast4?: string;
+    bankName?: string;
+  };
 }
+

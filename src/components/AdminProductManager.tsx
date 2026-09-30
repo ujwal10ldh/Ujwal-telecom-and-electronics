@@ -7,11 +7,14 @@ import {
   RotateCcw, 
   Download, 
   Check, 
-  SlidersHorizontal,
-  Package,
-  Layers
+  SlidersHorizontal, 
+  Package, 
+  Layers,
+  Crown,
+  Lock,
+  ShieldAlert
 } from 'lucide-react';
-import { useShop } from '../context/ShopContext';
+import { useShop, ADMIN_EMAIL } from '../context/ShopContext';
 import { Product, StockStatus } from '../types';
 import { CATEGORIES } from '../data/storeData';
 
@@ -19,6 +22,10 @@ export const AdminProductManager: React.FC = () => {
   const {
     isAdminOpen,
     setIsAdminOpen,
+    isAdmin,
+    currentUser,
+    setIsAuthOpen,
+    setAuthMode,
     products,
     addProduct,
     updateProduct,
@@ -52,6 +59,45 @@ export const AdminProductManager: React.FC = () => {
   });
 
   if (!isAdminOpen) return null;
+
+  if (!isAdmin) {
+    return (
+      <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl max-w-md w-full p-6 text-center shadow-2xl border border-slate-200 space-y-4 animate-in fade-in zoom-in-95 duration-150">
+          <div className="w-14 h-14 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center mx-auto border border-rose-200">
+            <Lock className="w-6 h-6" />
+          </div>
+          <h3 className="text-base font-bold text-slate-900">Admin Power Restricted</h3>
+          <p className="text-xs text-slate-600 leading-relaxed">
+            Only the store owner account (<strong>{ADMIN_EMAIL}</strong>) has administrative power to add products, adjust pricing, and manage inventory.
+          </p>
+          <div className="p-3 bg-slate-50 rounded-xl text-[11px] text-slate-500 text-left">
+            Current session: <strong>{currentUser ? `${currentUser.name} (${currentUser.role})` : 'Guest'}</strong>
+          </div>
+          <div className="pt-2 flex flex-col gap-2">
+            <button
+              onClick={() => {
+                setIsAdminOpen(false);
+                setAuthMode('login');
+                setIsAuthOpen(true);
+              }}
+              className="w-full py-2.5 bg-emerald-950 text-white text-xs font-bold rounded-lg hover:bg-emerald-900 flex items-center justify-center gap-1.5 cursor-pointer"
+            >
+              <Crown className="w-3.5 h-3.5 text-amber-400" />
+              <span>Log In as Store Owner ({ADMIN_EMAIL})</span>
+            </button>
+            <button
+              onClick={() => setIsAdminOpen(false)}
+              className="w-full py-2 text-slate-600 text-xs font-semibold hover:text-slate-900 cursor-pointer"
+            >
+              Return to Store
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
 
   const handleStartCreate = () => {
     setEditingProduct(null);
@@ -181,10 +227,10 @@ export const AdminProductManager: React.FC = () => {
             <button
               onClick={resetProductsToDefault}
               className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-lg text-xs font-semibold flex items-center gap-1.5"
-              title="Reset to default demo items"
+              title="Reset catalog to standard inventory"
             >
               <RotateCcw className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Reset Defaults</span>
+              <span className="hidden sm:inline">Reset Standard Inventory</span>
             </button>
             <button
               onClick={() => setIsAdminOpen(false)}

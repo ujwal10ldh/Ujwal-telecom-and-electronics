@@ -219,7 +219,7 @@ export const ContactSection: React.FC = () => {
                       <input
                         type="tel"
                         required
-                        placeholder="e.g. 9822000000"
+                        placeholder="e.g. 9803679285"
                         value={formState.phone}
                         onChange={(e) => setFormState({ ...formState, phone: e.target.value })}
                         className="w-full text-xs p-2.5 rounded-lg border border-slate-300 focus:outline-none focus:border-emerald-600"
